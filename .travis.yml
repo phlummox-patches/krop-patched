@@ -1,0 +1,23 @@
+sudo: required
+
+services:
+  - docker
+
+branches:
+    only:
+    - /v\d+.*/
+
+script:
+  - make copy
+
+deploy:
+  provider: releases
+  api_key:
+    secure: pekGpfILDVgCNf0Te5/z+x4Aba8yrlVeaoc0iIbBl6bnj05Ht/rc0vMKocKQKfvTYGLqpcQ6yD6kqD53AaR1VoSXR+7vkJcVcfV1kFFODPMaFFJTUj6An21iV96RykSJocbmg0ptQYWtTcHfx88eR2oJYn72hK0wpp01MrOXDoDz5fcqGHyEPY8e519P8kxCxfOi7I5z324VLIikZyEiYRVXR33CivOxV3zyFWAA6LX5MnG3R0ChkIPU7zBo7yhZyvBMKboO0j6ABBTm3248f4KDkeBdpLa2kJ24/BocIqZfqEKst7yN+H3utxaOancQjHNsg8IzexhamxhLKyX0Ewk06d3krGfBgA5CI0XkT/TmjnbgwrH0rq22p7D8Uyv6o0iIROOO/SONSUN2A1+zn3LODWfTWnXly6+UfbRML0tMymC2XjJbViMVVnLCeSjpIHUVn3gwXQdyIylu2/gGJiCUAQQjbpwcZB9Zgw9F0Lpu4nHWLJerBRmobWVKTGFBhuRujle/gGi0DEGddbSXlARKLFIdoeB19dT1mA5btiIzyt9NTELb3N4rEAs3TLu8C73kZ8jewTr0TOPvG2Cjfc3Y3Q0H7qe1o5/KQwJdpw99gfLQYR/zTCedaN/gjoBHWw+cSnTfS18SU92MCADhdqHPvWSP6l7rF8jFO4M+r28=
+  file:
+    - "krop"
+    - "krop-0.5.1.deb"
+  on:
+    tags: true
+    all_branches: true
+  skip_cleanup: true

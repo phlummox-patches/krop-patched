@@ -1,0 +1,223 @@
+diff --git ChangeLog ChangeLog
+index ba31bfd..350ffdb 100644
+--- ChangeLog
++++ ChangeLog
+@@ -86,7 +86,7 @@ krop (0.4.5)  2014-02-01 -- Armin Straub
+ 
+ krop (0.4.4)  2013-08-18 -- Armin Straub
+ 
+-  + If available use PyPDF2 in place of pyPdf.
++  + If available use pypdf4 in place of pyPdf.
+   * Correctly crop PDFs which have orientation other than 'portrait' (thanks
+   to Gaetano Pepe for sending sample PDFs and testing).
+   * In case of more than one selection per page, cropping is much faster now
+diff --git README.md README.md
+index 6787364..0cb4aec 100644
+--- README.md
++++ README.md
+@@ -18,7 +18,7 @@ tar xzf krop-0.5.1.tar.gz
+ cd krop-0.5.1
+ python -m krop
+ ```
+-¹ *Requires: **PyQT5**, **python-poppler-qt5** and **PyPDF2** (also works with PyQT4, python-poppler-qt4 and pyPdf)*
++¹ *Requires: **PyQT5**, **python-poppler-qt5** and **pypdf4** (also works with PyQT4, python-poppler-qt4 and pyPdf)*
+ 
+ This should work using either version 2 or 3 of Python. On some distributions, including Ubuntu 18.04, you need to replace python with python3 in order to use Python 3.
+ 
+diff --git TODO TODO
+index 770d963..33c03be 100644
+--- TODO
++++ TODO
+@@ -9,7 +9,7 @@ Missing
+ + Allow translations
+ + Shortcuts
+ + <del>Is there a clean solution to shut down on CTRL+c? (see [[http://stackoverflow.com/questions/4938723/]])</del>
+-+ <del>Support PyPDF2 besides pyPDF</del>
+++ <del>Support pypdf4 besides pyPDF</del>
+ 
+ Ideas
+ + Option to overlay pages in order to improve making selections
+diff --git debian/control debian/control
+index 0b748e2..8740deb 100644
+--- debian/control
++++ debian/control
+@@ -11,7 +11,7 @@ Architecture: all
+ Depends: ${misc:Depends}, ${python3:Depends}, python3-distutils, python3-poppler-qt5, python3-pypdf2
+ Description: A tool to crop PDF files
+  This is a simple graphical tool to crop the pages of PDF files. It is written
+- in Python and relies on PyQT, python-poppler-qt5 and PyPDF2 for its
++ in Python and relies on PyQT, python-poppler-qt5 and pypdf4 for its
+  functionality.
+  .
+  A unique feature of krop is its ability to automatically split
+diff --git krop.1 krop.1
+index bc0398b..bbea63e 100644
+--- krop.1
++++ krop.1
+@@ -12,7 +12,7 @@ This manual page documents briefly the
+ command.
+ .PP
+ \fBkrop\fP is a simple graphical tool to crop the pages of PDF files. It is written
+-in Python and relies on PyQT, python-poppler-qt5 and PyPDF2 for its functionality.
++in Python and relies on PyQT, python-poppler-qt5 and pypdf4 for its functionality.
+ A unique feature of krop is its ability to automatically split pages into subpages
+ to fit the limited screen size of devices such as eReaders. This is particularly
+ useful, if your eReader does not support convenient scrolling.
+@@ -61,5 +61,5 @@ do not use KDE libraries (default: use if available)
+ .B \-\-no\-qt5
+ do not use PyQt5 instead of PyQt4 (default: use PyQt5 if available)
+ .TP
+-.B \-\-no\-PyPDF2
+-do not use PyPDF2 instead of pyPdf (default: use PyPDF2 if available)
++.B \-\-no\-pypdf
++do not use pypdf instead of pyPdf (default: use pypdf if available)
+diff --git krop.appdata.xml krop.appdata.xml
+index 34fa707..dad8781 100644
+--- krop.appdata.xml
++++ krop.appdata.xml
+@@ -12,7 +12,7 @@
+       krop is a simple graphical tool to crop the pages of PDF files.
+     </p>
+     <p>
+-      It is written in Python and relies on PyQT, python-poppler-qt5 and PyPDF2 for its functionality.
++      It is written in Python and relies on PyQT, python-poppler-qt5 and pypdf4 for its functionality.
+     </p>
+     <p>
+       A unique feature of krop is its ability to automatically split pages into subpages to fit the limited screen size of devices such as eReaders. This is particularly useful, if your eReader does not support convenient scrolling.
+diff --git krop/application.py krop/application.py
+index d36380f..84570fb 100644
+--- krop/application.py
++++ krop/application.py
+@@ -37,7 +37,7 @@ def main():
+     parser.add_argument('--selections', type=str, choices=['all','evenodd','individual'], help='to which pages should selections apply')
+     parser.add_argument('--no-kde', action='store_true', help='do not use KDE libraries (default: use if available)')
+     parser.add_argument('--no-qt5', action='store_true', help='do not use PyQt5 instead of PyQt4 (default: use PyQt5 if available)')
+-    parser.add_argument('--no-PyPDF2', action='store_true', help='do not use PyPDF2 instead of pyPdf (default: use PyPDF2 if available)')
++    parser.add_argument('--no-pypdf4', action='store_true', help='do not use pypdf4 instead of pyPdf (default: use pypdf4 if available)')
+ 
+     args = parser.parse_args()
+ 
+diff --git krop/config.py krop/config.py
+index 412efbe..41dbcdd 100644
+--- krop/config.py
++++ krop/config.py
+@@ -1,33 +1,44 @@
+ import sys
+ 
+-PYQT5 = False
++KDE = False
++
+ try:
+     import sip
+-    # use PyQt5 unless not available or specified otherwise
+-    if '--no-qt5' not in sys.argv:
+-        try:
+-            import PyQt5
+-            PYQT5 = True
+-        except ImportError:
+-            pass
+-    if not PYQT5:
+-        import PyQt4
++    import PyQt5
++    import PyQt5.QtXml
++    PYQT5 = True
+ except ImportError:
+-    _msg = "Please install PyQt4 or PyQt5 first."
+-    raise RuntimeError(_msg)
++    raise RuntimeError("ack! no PyQt5!")
+ 
+-sip.setapi('QString', 2)
+-sip.setapi('QVariant', 2)
+ 
+-# use KDE unless not available or specified otherwise
+-KDE = False
+-if '--no-kde' not in sys.argv:
+-    if PYQT5:
+-        #TODO use PyKDE5 once more easily available
+-        pass
+-    else:
+-        try:
+-            import PyKDE4
+-            KDE = True
+-        except ImportError:
+-            pass
++#PYQT5 = False
++#try:
++#    import sip
++#    # use PyQt5 unless not available or specified otherwise
++#    if '--no-qt5' not in sys.argv:
++#        try:
++#            import PyQt5
++#            PYQT5 = True
++#        except ImportError:
++#            pass
++#    if not PYQT5:
++#        import PyQt4
++#except ImportError:
++#    _msg = "Please install PyQt4 or PyQt5 first."
++#    raise RuntimeError(_msg)
++#
++#sip.setapi('QString', 2)
++#sip.setapi('QVariant', 2)
++#
++## use KDE unless not available or specified otherwise
++#KDE = False
++#if '--no-kde' not in sys.argv:
++#    if PYQT5:
++#        #TODO use PyKDE5 once more easily available
++#        pass
++#    else:
++#        try:
++#            import PyKDE4
++#            KDE = True
++#        except ImportError:
++#            pass
+diff --git krop/pdfcropper.py krop/pdfcropper.py
+index 8d4b2f1..423c04b 100644
+--- krop/pdfcropper.py
++++ krop/pdfcropper.py
+@@ -16,18 +16,18 @@ the Free Software Foundation; either version 3 of the License, or
+ import copy
+ import sys
+ 
+-# Unless specified otherwise, use PyPDF2 instead of pyPdf if available.
+-usepypdf2 = '--no-PyPDF2' not in sys.argv
++# Unless specified otherwise, use pypdf4 instead of pyPdf if available.
++usepypdf2 = '--no-pypdf4' not in sys.argv
+ if usepypdf2:
+     try:
+-        from PyPDF2 import PdfFileReader, PdfFileWriter
++        from PyPDF4 import PdfFileReader, PdfFileWriter
+     except ImportError:
+         usepypdf2 = False
+ if not usepypdf2:
+     try:
+         from pyPdf import PdfFileReader, PdfFileWriter
+     except ImportError:
+-        _msg = "Please install PyPDF2 (or its predecessor pyPdf) first."\
++        _msg = "Please install pypdf4 (or its predecessor pyPdf) first."\
+             "\n\tOn recent versions of Ubuntu, the following should do the trick:"\
+             "\n\tsudo apt-get install python-pypdf2"\
+             "\n\t(or, if using python3) sudo apt-get install python3-pypdf2"
+@@ -74,7 +74,7 @@ class PyPdfCropper(AbstractPdfCropper):
+     def writeToStream(self, stream):
+         # For certain large pdf files, PdfFileWriter.write() causes the error:
+         #  maximum recursion depth exceeded while calling a Python object
+-        # This issue is present in pyPdf as well as PyPDF2 1.23
++        # This issue is present in pyPdf as well as pypdf4 1.23
+         # We therefore temporarily increase the recursion limit.
+         old_reclimit = sys.getrecursionlimit()
+         sys.setrecursionlimit(10000)
+diff --git setup.py setup.py
+index aba2e3a..6776240 100755
+--- setup.py
++++ setup.py
+@@ -33,7 +33,7 @@ setup(
+         author_email = 'mail@arminstraub.com',
+         url = 'http://arminstraub.com/software/krop',
+         description = 'A tool to crop PDF files',
+-        long_description = 'krop is a simple graphical tool to crop the pages of PDF files. It is written in Python and relies on PyQT, python-poppler-qt5 and PyPDF2 for its functionality. A unique feature of krop is its ability to automatically split pages into subpages to fit the limited screen size of devices such as eReaders. This is particularly useful, if your eReader does not support convenient scrolling.',
++        long_description = 'krop is a simple graphical tool to crop the pages of PDF files. It is written in Python and relies on PyQT, python-poppler-qt5 and pypdf4 for its functionality. A unique feature of krop is its ability to automatically split pages into subpages to fit the limited screen size of devices such as eReaders. This is particularly useful, if your eReader does not support convenient scrolling.',
+         keywords = 'pdf crop ereader',
+         packages = ['krop'],
+         scripts = ['bin/krop'],
